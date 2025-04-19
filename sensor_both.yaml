@@ -1,8 +1,28 @@
 # --------------------------------------
-# Fahrradwetter-Konfiguration (OWM + lokal)
+# Fahrradwetter-Konfiguration (Mit lokaler Wetterstation + OpenWeatherMap)
 # --------------------------------------
 
-# -> Abschnitt 1 & 2 wie in "sensor_openweathermap_only.yaml"
+# 1. Rohdaten aus der 5-Tage-Vorhersage von OpenWeatherMap (alle 3h)
+- platform: rest
+  name: raw_fahrrad_forecast
+  resource: "https://api.openweathermap.org/data/2.5/forecast?lat=YOUR_LATITUDE&lon=YOUR_LONGITUDE&appid=YOUR_API_KEY&units=metric&lang=de"
+  value_template: "{{ value_json.list[0].dt }}"
+  scan_interval: 3600
+  json_attributes:
+    - list
+
+# 2. Aktuelles Wetter heute (inkl. Regen)
+- platform: rest
+  name: fahrradwetter_heute
+  resource: "https://api.openweathermap.org/data/2.5/weather?lat=YOUR_LATITUDE&lon=YOUR_LONGITUDE&appid=YOUR_API_KEY&units=metric&lang=de"
+  value_template: "{{ value_json.main.temp }}"
+  scan_interval: 3600
+  json_attributes:
+    - weather
+    - wind
+    - main
+    - clouds
+    - rain
 
 # 3. Aktuelle lokale Wetterdaten (von der Wetterstation)
 - platform: template
@@ -11,7 +31,7 @@
       friendly_name: "Fahrradwetter Aktuell"
       unit_of_measurement: "°C"
       value_template: >
-        {% set local_temp = states('sensor.DEIN_SENSORNAME_temperature') | float(0) %}
+        {% set local_temp = states('sensor.gw1100a_v2_2_3_outdoor_temperature') | float(0) %}
         {% set owm_temp = states('sensor.fahrradwetter_heute') | float(0) %}
         {% if local_temp > 0 %}
           {{ local_temp }}
@@ -20,17 +40,25 @@
         {% endif %}
       attribute_templates:
         source: >
-          {% if states('sensor.DEIN_SENSORNAME_temperature') | float(0) > 0 %}
+          {% if states('sensor.gw1100a_v2_2_3_outdoor_temperature') | float(0) > 0 %}
             lokal
           {% else %}
             openweathermap
           {% endif %}
         temp: >
-          {{ states('sensor.DEIN_SENSORNAME_temperature') | float(0) if states('sensor.DEIN_SENSORNAME_temperature') | float(0) > 0 else states('sensor.fahrradwetter_heute') | float(0) }}
+          {% set local_temp = states('sensor.gw1100a_v2_2_3_outdoor_temperature') | float(0) %}
+          {% set owm_temp = states('sensor.fahrradwetter_heute') | float(0) %}
+          {{ local_temp if local_temp > 0 else owm_temp }}
         wind: >
-          {{ states('sensor.DEIN_SENSORNAME_wind') | float(0) if states('sensor.DEIN_SENSORNAME_wind') | float(0) > 0 else state_attr('sensor.fahrradwetter_heute', 'wind').speed | float(0) }}
+          {% set local_wind = states('sensor.gw1100a_v2_2_3_wind_speed') | float(0) %}
+          {% set owm_wind = state_attr('sensor.fahrradwetter_heute', 'wind') %}
+          {% set owm_speed = owm_wind.speed if owm_wind is defined and owm_wind.speed is defined else 0 %}
+          {{ local_wind if local_wind > 0 else owm_speed }}
         rain: >
-          {{ states('sensor.DEIN_SENSORNAME_rain') | float(0) if states('sensor.DEIN_SENSORNAME_rain') | float(0) > 0 else state_attr('sensor.fahrradwetter_heute', 'rain')['1h'] | float(0) }}
+          {% set local_rain = states('sensor.gw1100a_v2_2_3_rain_rate') | float(0) %}
+          {% set owm_rain = state_attr('sensor.fahrradwetter_heute', 'rain') %}
+          {% set owm_rain_value = owm_rain['1h'] if owm_rain is defined and '1h' in owm_rain else 0 %}
+          {{ local_rain if local_rain > 0 else owm_rain_value }}
         beurteilung: >
           {% set temp = this.attributes.temp | float(0) %}
           {% set wind = this.attributes.wind | float(0) %}
@@ -40,3 +68,59 @@
           {% else %}
             ❌ Schlecht
           {% endif %}
+
+# 4. Wetter morgen um 06:00 Uhr
+- platform: template
+  sensors:
+    fahrradwetter_morgen_0630:
+      friendly_name: "Fahrradwetter Morgen 06:30"
+      unit_of_measurement: "°C"
+      value_template: >
+        {% set forecast = state_attr('sensor.raw_fahrrad_forecast', 'list') %}
+        {% set morgen = (now().date() + timedelta(days=1)).strftime('%Y-%m-%d') %}
+        {% for block in forecast %}
+          {% if block.dt_txt.startswith(morgen + ' 06:00:00') %}
+            {% set temp = block.main.temp | float(0) %}
+            {% if temp != 0 %}
+              {{ temp }}
+            {% else %}
+              0
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+      attribute_templates:
+        dt_txt: >
+          {% set forecast = state_attr('sensor.raw_fahrrad_forecast', 'list') %}
+          {% set morgen = (now().date() + timedelta(days=1)).strftime('%Y-%m-%d') %}
+          {% for block in forecast %}
+            {% if block.dt_txt.startswith(morgen + ' 06:00:00') %}
+              {{ block.dt_txt }}
+            {% endif %}
+          {% endfor %}
+        weather: >
+          {% set forecast = state_attr('sensor.raw_fahrrad_forecast', 'list') %}
+          {% set morgen = (now().date() + timedelta(days=1)).strftime('%Y-%m-%d') %}
+          {% for block in forecast %}
+            {% if block.dt_txt.startswith(morgen + ' 06:00:00') %}
+              {{ block.weather | first }}
+            {% endif %}
+          {% endfor %}
+        wind: >
+          {% set forecast = state_attr('sensor.raw_fahrrad_forecast', 'list') %}
+          {% set morgen = (now().date() + timedelta(days=1)).strftime('%Y-%m-%d') %}
+          {% for block in forecast %}
+            {% if block.dt_txt.startswith(morgen + ' 06:00:00') %}
+              {% set wind_speed = block.wind.speed | float(0) %}
+              {% if wind_speed > 0 %}
+                {{ wind_speed }}
+              {% else %}
+                0
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        rain: >
+          {% set forecast = state_attr('sensor.raw_fahrrad_forecast', 'list') %}
+          {% set morgen = (now().date() + timedelta(days=1)).strftime('%Y-%m-%d') %}
+          {% set block = forecast | selectattr('dt_txt', 'search', morgen + ' 06:00:00') | list | first %}
+          {% set rain_value = block.rain['3h'] if block.rain is defined and '3h' in block.rain else 0 %}
+          {{ rain_value }}
