@@ -1,4 +1,3 @@
-
 type: custom:button-card
 name: Fahrradwetter
 icon: mdi:bike
@@ -26,8 +25,7 @@ label: |
     function format(sensor, titel, fallbackRain = 0) {
       const state = states[sensor];
       if (!state || state.state === "unknown") {
-        return `${titel}:
-❓ Unbekannt`;
+        return `${titel}:\n❓ Unbekannt`;
       }
 
       const temp = parseFloat(state.state);
@@ -35,19 +33,11 @@ label: |
       const rain = parseFloat(state.attributes.rain ?? fallbackRain);
       const status = (temp > 10 && wind < 15 && rain === 0) ? "✅ Gut" : "❌ Schlecht";
 
-      return `${titel}:
-${status}
-🌡️ ${temp.toFixed(1)} °C
-💨 Wind: ${wind.toFixed(1)} km/h
-🌧️ Regen: ${rain.toFixed(1)} mm/h`;
+      return `${titel}:\n${status}\n🌡️ ${temp.toFixed(1)} °C\n💨 Wind: ${wind.toFixed(1)} km/h\n🌧️ Regen: ${rain.toFixed(1)} mm/h`;
     }
 
-    return format("sensor.fahrradwetter_aktuell", "🚲 Jetzt") + "
-
-" +
-           format("sensor.fahrradwetter_morgen_0630", "🌅 Morgen 06:30") + "
-
-" +
+    return format("sensor.fahrradwetter_aktuell", "🚲 Jetzt") + "\n\n" +
+           format("sensor.fahrradwetter_morgen_0630", "🌅 Morgen 06:30") + "\n\n" +
            format("sensor.fahrradwetter_morgen_1600", "🌇 Morgen 16:00");
   ]]]
 tap_action:
