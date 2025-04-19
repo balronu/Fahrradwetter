@@ -1,0 +1,54 @@
+
+type: custom:button-card
+name: Fahrradwetter
+icon: mdi:bike
+layout: vertical
+show_state: false
+show_label: true
+styles:
+  card:
+    - padding: 12px
+    - font-size: 1em
+    - text-align: left
+    - white-space: pre-line
+    - height: auto
+  name:
+    - font-weight: bold
+    - font-size: 1.2em
+  label:
+    - font-size: 0.95em
+    - white-space: pre-line
+  icon:
+    - width: 48px
+    - height: 48px
+label: |
+  [[[
+    function format(sensor, titel, fallbackRain = 0) {
+      const state = states[sensor];
+      if (!state || state.state === "unknown") {
+        return `${titel}:
+❓ Unbekannt`;
+      }
+
+      const temp = parseFloat(state.state);
+      const wind = parseFloat(state.attributes.wind ?? 0);
+      const rain = parseFloat(state.attributes.rain ?? fallbackRain);
+      const status = (temp > 10 && wind < 15 && rain === 0) ? "✅ Gut" : "❌ Schlecht";
+
+      return `${titel}:
+${status}
+🌡️ ${temp.toFixed(1)} °C
+💨 Wind: ${wind.toFixed(1)} km/h
+🌧️ Regen: ${rain.toFixed(1)} mm/h`;
+    }
+
+    return format("sensor.fahrradwetter_aktuell", "🚲 Jetzt") + "
+
+" +
+           format("sensor.fahrradwetter_morgen_0630", "🌅 Morgen 06:30") + "
+
+" +
+           format("sensor.fahrradwetter_morgen_1600", "🌇 Morgen 16:00");
+  ]]]
+tap_action:
+  action: none

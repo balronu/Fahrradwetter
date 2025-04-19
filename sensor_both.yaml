@@ -1,0 +1,71 @@
+
+# --------------------------------------
+# Fahrradwetter-Konfiguration
+# --------------------------------------
+
+# 1. Rohdaten aus der 5-Tage-Vorhersage von OpenWeatherMap (alle 3h)
+- platform: rest
+  name: raw_fahrrad_forecast
+  resource: "https://api.openweathermap.org/data/2.5/forecast?lat=49.3&lon=7.05&appid=YOUR_OPENWEATHERMAP_API_KEY&units=metric&lang=de"
+  value_template: "{{ value_json.list[0].dt }}"
+  scan_interval: 3600
+  json_attributes:
+    - list
+
+# 2. Aktuelles Wetter heute (inkl. Regen)
+- platform: rest
+  name: fahrradwetter_heute
+  resource: "https://api.openweathermap.org/data/2.5/weather?lat=49.3&lon=7.05&appid=YOUR_OPENWEATHERMAP_API_KEY&units=metric&lang=de"
+  value_template: "{{ value_json.main.temp }}"
+  scan_interval: 3600
+  json_attributes:
+    - weather
+    - wind
+    - main
+    - clouds
+    - rain
+
+# 3. Aktuelle Wetterdaten (mit lokaler Station oder OpenWeatherMap)
+- platform: template
+  sensors:
+    fahrradwetter_aktuell:
+      friendly_name: "Fahrradwetter Aktuell"
+      unit_of_measurement: "°C"
+      value_template: >
+        {% set local_temp = states('sensor.gw1100a_v2_2_3_outdoor_temperature') | float(0) %}
+        {% set owm_temp = states('sensor.fahrradwetter_heute') | float(0) %}
+        {% if local_temp > 0 %}
+          {{ local_temp }}
+        {% else %}
+          {{ owm_temp }}
+        {% endif %}
+      attribute_templates:
+        source: >
+          {% if states('sensor.gw1100a_v2_2_3_outdoor_temperature') | float(0) > 0 %}
+            lokal
+          {% else %}
+            openweathermap
+          {% endif %}
+        temp: >
+          {% set local_temp = states('sensor.gw1100a_v2_2_3_outdoor_temperature') | float(0) %}
+          {% set owm_temp = states('sensor.fahrradwetter_heute') | float(0) %}
+          {{ local_temp if local_temp > 0 else owm_temp }}
+        wind: >
+          {% set local_wind = states('sensor.gw1100a_v2_2_3_wind_speed') | float(0) %}
+          {% set owm_wind = state_attr('sensor.fahrradwetter_heute', 'wind') %}
+          {% set owm_speed = owm_wind.speed if owm_wind is defined and owm_wind.speed is defined else 0 %}
+          {{ local_wind if local_wind > 0 else owm_speed }}
+        rain: >
+          {% set local_rain = states('sensor.gw1100a_v2_2_3_rain_rate') | float(0) %}
+          {% set owm_rain = state_attr('sensor.fahrradwetter_heute', 'rain') %}
+          {% set owm_rain_value = owm_rain['1h'] if owm_rain is defined and '1h' in owm_rain else 0 %}
+          {{ local_rain if local_rain > 0 else owm_rain_value }}
+        beurteilung: >
+          {% set temp = this.attributes.temp | float(0) %}
+          {% set wind = this.attributes.wind | float(0) %}
+          {% set rain = this.attributes.rain | float(0) %}
+          {% if temp > 10 and wind < 15 and rain == 0 %}
+            ✅ Gut
+          {% else %}
+            ❌ Schlecht
+          {% endif %}

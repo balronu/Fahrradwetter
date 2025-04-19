@@ -1,0 +1,48 @@
+
+# --------------------------------------
+# Fahrradwetter-Konfiguration
+# --------------------------------------
+
+# 1. Rohdaten aus der 5-Tage-Vorhersage von OpenWeatherMap (alle 3h)
+- platform: rest
+  name: raw_fahrrad_forecast
+  resource: "https://api.openweathermap.org/data/2.5/forecast?lat=49.3&lon=7.05&appid=YOUR_OPENWEATHERMAP_API_KEY&units=metric&lang=de"
+  value_template: "{{ value_json.list[0].dt }}"
+  scan_interval: 3600
+  json_attributes:
+    - list
+
+# 2. Aktuelles Wetter heute (inkl. Regen)
+- platform: rest
+  name: fahrradwetter_heute
+  resource: "https://api.openweathermap.org/data/2.5/weather?lat=49.3&lon=7.05&appid=YOUR_OPENWEATHERMAP_API_KEY&units=metric&lang=de"
+  value_template: "{{ value_json.main.temp }}"
+  scan_interval: 3600
+  json_attributes:
+    - weather
+    - wind
+    - main
+    - clouds
+    - rain
+
+# 3. Aktuelle Wetterdaten (nur OpenWeatherMap, ohne lokale Station)
+- platform: template
+  sensors:
+    fahrradwetter_aktuell:
+      friendly_name: "Fahrradwetter Aktuell"
+      unit_of_measurement: "°C"
+      value_template: "{{ states('sensor.fahrradwetter_heute') }}"
+      attribute_templates:
+        source: "openweathermap"
+        temp: "{{ states('sensor.fahrradwetter_heute') }}"
+        wind: "{{ state_attr('sensor.fahrradwetter_heute', 'wind')['speed'] }}"
+        rain: "{{ state_attr('sensor.fahrradwetter_heute', 'rain')['1h'] if state_attr('sensor.fahrradwetter_heute', 'rain') else 0 }}"
+        beurteilung: >
+          {% set temp = this.attributes.temp | float(0) %}
+          {% set wind = this.attributes.wind | float(0) %}
+          {% set rain = this.attributes.rain | float(0) %}
+          {% if temp > 10 and wind < 15 and rain == 0 %}
+            ✅ Gut
+          {% else %}
+            ❌ Schlecht
+          {% endif %}
