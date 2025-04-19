@@ -13,7 +13,7 @@
 
 # 2. Aktuelles Wetter heute (inkl. Regen)
 - platform: rest
-  name: fahrradwetter_heute
+  name: fahrradwetter_aktuell
   resource: "https://api.openweathermap.org/data/2.5/weather?lat=YOUR_LATITUDE&lon=YOUR_LONGITUDE&appid=YOUR_API_KEY&units=metric&lang=de"
   value_template: "{{ value_json.main.temp }}"
   scan_interval: 3600
