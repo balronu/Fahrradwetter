@@ -27,7 +27,7 @@ Diese Konfiguration zeigt dir auf einen Blick, ob das Wetter gerade oder morgen 
 
 ## 🖼️ Vorschau
 
-![Fahrradwetter Dashboard Vorschau](screenshot_dashboard.png)
+![Fahrradwetter Dashboard Vorschau](screenshot.png)
 
 ## ✅ Kriterien für "Gutes Wetter"
 - Temperatur über 10 °C  
