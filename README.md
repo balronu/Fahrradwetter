@@ -1,74 +1,39 @@
-Fahrradwetter Dashboard (Home Assistant)
+# 🚲 Fahrradwetter für Home Assistant
 
+Diese Konfiguration zeigt dir auf einen Blick, ob das Wetter gerade oder morgen gut fürs Fahrrad ist – inkl. Temperatur, Wind und Regen.
 
+## 🔧 Einrichtung
 
-Dieses Projekt zeigt eine schöne, einfache Dashboard-Karte in Home Assistant, um das Wetter fürs Fahrradfahren anzuzeigen.
+1. **Standort anpassen:**
+   Ersetze `YOUR_LATITUDE` und `YOUR_LONGITUDE` in den YAML-Dateien durch deine Koordinaten  
+   *(z. B. `lat=52.52`, `lon=13.41` für Berlin).*
 
-Varianten
+2. **API-Key anpassen:**
+   Melde dich bei [OpenWeatherMap](https://openweathermap.org/) an und ersetze `YOUR_API_KEY` durch deinen Key.
 
-Es gibt zwei Varianten für die Nutzung:
+3. **Wetterstation (optional):**
+   Wenn du eigene Sensoren hast, ersetze:
+   - `sensor.DEIN_SENSORNAME_temperature`
+   - `sensor.DEIN_SENSORNAME_wind`
+   - `sensor.DEIN_SENSORNAME_rain`  
+   mit den Namen deiner lokalen Sensoren.
 
-1. Nur OpenWeatherMap-Daten verwenden
+4. **Dateien einfügen:**
+   - `sensor_openweathermap_only.yaml` oder `sensor_both.yaml` nach `/config/sensors/` (je nach Nutzung)
+   - `dashboard_card.yaml` ins Dashboard via YAML-Modus oder über ein `manual card` in der UI
 
-Für Benutzer ohne eigene Wetterstation.
+5. **Custom Button Card installieren:**
+   Diese Anzeige benötigt die [button-card](https://github.com/custom-cards/button-card) (HACS empfohlen).
 
-Datei: sensor_openweathermap_only.yaml
+## 🖼️ Vorschau
 
-2. OpenWeatherMap + lokale Wetterstation kombinieren
+![Fahrradwetter Dashboard Vorschau](screenshot_dashboard.png)
 
-Für Benutzer mit einer eigenen Wetterstation (z. B. GW1100A).
+## ✅ Kriterien für "Gutes Wetter"
+- Temperatur über 10 °C  
+- Wind unter 15 km/h  
+- Kein Regen
 
-Datei: sensor_both.yaml
+---
 
-Einrichtung
-
-1. Sensor-Datei auswählen
-
-Füge eine der YAML-Dateien in deine Home Assistant configuration.yaml ein oder verwende sie über die sensor:-Konfiguration.
-
-Benenne sie ggf. um in sensor.yaml, falls du mehrere Dateien nutzt.
-
-2. Koordinaten und API-Key eintragen
-
-In der gewählten Datei musst du Folgendes ersetzen:
-
-lat=YOUR_LATITUDE
-lon=YOUR_LONGITUDE
-appid=YOUR_API_KEY
-
-YOUR_LATITUDE: z. B. 52.52 für Berlin
-
-YOUR_LONGITUDE: z. B. 13.41 für Berlin
-
-YOUR_API_KEY: deinen API-Key von https://openweathermap.org/api
-
-3. Dashboard-Karte hinzufügen
-
-Verwende den Code aus der Datei dashboard_button_card.yaml, um eine schöne Visualisierung im Dashboard zu erhalten.
-
-Die Karte verwendet das Plugin button-card. Stelle sicher, dass du es über HACS oder manuell installiert hast: https://github.com/custom-cards/button-card
-
-Beispielanzeige
-
-Die Karte zeigt drei Zeitpunkte an:
-
-Aktuelles Wetter (ggf. von deiner Wetterstation)
-
-Morgen um 06:30 Uhr
-
-Morgen um 16:00 Uhr
-
-Für jeden Zeitpunkt siehst du:
-
-Temperatur
-
-Windgeschwindigkeit
-
-Regenmenge
-
-Eine simple Bewertung (✅ Gut / ❌ Schlecht)
-
-Lizenz
-
-MIT License
-
+Viel Spaß beim Radfahren! 🚴
